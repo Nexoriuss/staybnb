@@ -1,0 +1,27 @@
+# Staybnb — Démarrage ultra simple
+
+## Windows
+1) Double-clique **start_windows.bat**
+2) Attends la fin de l'installation (ça peut prendre 1–3 min la première fois)
+3) Quand tu vois "Running on http://127.0.0.1:5000", ouvre ton navigateur à **http://localhost:5000**
+
+Si un message dit que Python n'est pas installé :
+- Va sur https://www.python.org/downloads/
+- Télécharge "Windows installer (64-bit)"
+- Pendant l'installation, **coche "Add Python to PATH"**, puis relance `start_windows.bat`
+
+## macOS / Linux
+1) Ouvre l'appli **Terminal**
+2) Place-toi dans le dossier `staybnb/` (glisse-dépose le dossier dans la fenêtre du terminal)
+3) Lance :
+   ```bash
+   chmod +x start_macos_linux.sh
+   ./start_macos_linux.sh
+   ```
+4) Ouvre **http://localhost:5000**
+
+## Où sont les photos ?
+- `static/uploads/`
+
+## Arrêter
+- Ferme la fenêtre du terminal ou fais `Ctrl+C`

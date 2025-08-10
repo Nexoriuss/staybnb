@@ -1,0 +1,28 @@
+\
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h4 mb-3">Annonces récentes</h1>
+<div class="row g-3">
+  {% for l in listings %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card h-100 shadow-sm">
+      {% if l.photos and l.photos[0] %}
+        <img src="{{ url_for('uploads', filename=l.photos[0].filename) }}" class="card-img-top" alt="{{ l.title }}">
+      {% else %}
+        <img src="https://picsum.photos/seed/{{ l.id }}/600/400" class="card-img-top" alt="placeholder">
+      {% endif %}
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <span class="fw-semibold">{{ l.city }}, {{ l.country }}</span>
+          <span class="text-muted">{{ l.price_per_night|int }} €/nuit</span>
+        </div>
+        <a class="stretched-link mt-2 d-block fw-bold text-decoration-none" href="{{ url_for('listing_detail', listing_id=l.id) }}">{{ l.title }}</a>
+        <small class="text-muted">{{ l.bedrooms }} ch • {{ l.bathrooms }} sdb • {{ l.max_guests }} pers</small>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <p>Aucune annonce pour le moment.</p>
+  {% endfor %}
+</div>
+{% endblock %}

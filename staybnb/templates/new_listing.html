@@ -1,0 +1,26 @@
+\
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h4">Nouvelle annonce</h1>
+<form method="post" enctype="multipart/form-data" class="row g-3">
+  {{ form.hidden_tag() }}
+  <div class="col-md-8">
+    {{ form.title.label }} {{ form.title(class="form-control") }}
+    {{ form.description.label }} {{ form.description(class="form-control", rows="5") }}
+    {{ form.amenities.label }} {{ form.amenities(class="form-control") }}
+  </div>
+  <div class="col-md-4">
+    {{ form.city.label }} {{ form.city(class="form-control") }}
+    {{ form.country.label }} {{ form.country(class="form-control") }}
+    {{ form.price_per_night.label }} {{ form.price_per_night(class="form-control") }}
+    {{ form.max_guests.label }} {{ form.max_guests(class="form-control") }}
+    {{ form.bedrooms.label }} {{ form.bedrooms(class="form-control") }}
+    {{ form.bathrooms.label }} {{ form.bathrooms(class="form-control") }}
+    {{ form.photo1.label }} {{ form.photo1(class="form-control") }}
+    {{ form.photo2.label }} {{ form.photo2(class="form-control") }}
+  </div>
+  <div class="col-12">
+    <button class="btn btn-primary">{{ form.submit.label.text }}</button>
+  </div>
+</form>
+{% endblock %}

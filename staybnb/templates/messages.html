@@ -1,0 +1,22 @@
+\
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h5">Messages avec {{ other.name }}</h1>
+<div class="border rounded p-3 mb-3" style="max-height: 60vh; overflow-y: auto;">
+  {% for m in messages %}
+    <div class="mb-2 {% if m.sender_id == current_user.id %}text-end{% endif %}">
+      <div class="d-inline-block p-2 rounded {% if m.sender_id == current_user.id %}bg-primary text-white{% else %}bg-light{% endif %}">
+        {{ m.body }}
+      </div><br>
+      <small class="text-muted">{{ m.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+    </div>
+  {% else %}
+    <p>Commence la conversation 👋</p>
+  {% endfor %}
+</div>
+<form method="post" class="d-flex gap-2">
+  {{ form.hidden_tag() }}
+  {{ form.body(class="form-control", placeholder="Écris ton message...") }}
+  <button class="btn btn-dark">{{ form.submit.label.text }}</button>
+</form>
+{% endblock %}
