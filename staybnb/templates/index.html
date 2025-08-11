@@ -1,28 +1,34 @@
-\
 {% extends "base.html" %}
 {% block content %}
-<h1 class="h4 mb-3">Annonces récentes</h1>
-<div class="row g-3">
+<h2 class="section-title">Annonces</h2>
+
+<div class="row g-4">
   {% for l in listings %}
-  <div class="col-12 col-md-6 col-lg-4">
-    <div class="card h-100 shadow-sm">
-      {% if l.photos and l.photos[0] %}
-        <img src="{{ url_for('uploads', filename=l.photos[0].filename) }}" class="card-img-top" alt="{{ l.title }}">
-      {% else %}
-        <img src="https://picsum.photos/seed/{{ l.id }}/600/400" class="card-img-top" alt="placeholder">
-      {% endif %}
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <span class="fw-semibold">{{ l.city }}, {{ l.country }}</span>
-          <span class="text-muted">{{ l.price_per_night|int }} €/nuit</span>
+    <div class="col-12 col-sm-6 col-lg-4">
+      <a class="stay-card" href="{{ url_for('listing_detail', listing_id=l.id) }}">
+        <div class="stay-image">
+          {% if l.photos and l.photos[0] %}
+            <img src="{{ url_for('uploads', filename=l.photos[0].filename) }}" alt="{{ l.title }}">
+          {% else %}
+            <img src="https://picsum.photos/seed/{{ l.id }}/800/600" alt="placeholder">
+          {% endif %}
+          <span class="price-badge">{{ l.price_per_night|int }}€ <span class="muted">/ nuit</span></span>
         </div>
-        <a class="stretched-link mt-2 d-block fw-bold text-decoration-none" href="{{ url_for('listing_detail', listing_id=l.id) }}">{{ l.title }}</a>
-        <small class="text-muted">{{ l.bedrooms }} ch • {{ l.bathrooms }} sdb • {{ l.max_guests }} pers</small>
-      </div>
+        <div class="stay-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="text-truncate me-2 fw-semibold">{{ l.city }}, {{ l.country }}</div>
+            <div class="small text-muted"><i class="bi bi-people"></i> {{ l.max_guests }}</div>
+          </div>
+          <div class="text-truncate text-muted">{{ l.title }}</div>
+          <div class="chips mt-2">
+            <span class="chip">{{ l.bedrooms }} ch</span>
+            <span class="chip">{{ l.bathrooms }} sdb</span>
+          </div>
+        </div>
+      </a>
     </div>
-  </div>
   {% else %}
-  <p>Aucune annonce pour le moment.</p>
+    <p>Aucune annonce pour le moment.</p>
   {% endfor %}
 </div>
 {% endblock %}
