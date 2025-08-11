@@ -1,67 +1,75 @@
-\
 {% extends "base.html" %}
 {% block content %}
 <div class="row g-4">
   <div class="col-lg-7">
-    <h1 class="h3">{{ listing.title }}</h1>
-    <p class="text-muted">{{ listing.city }}, {{ listing.country }}</p>
-    <div class="row g-2 mb-3">
+    <h1 class="h3 mb-1">{{ listing.title }}</h1>
+    <div class="text-muted mb-3"><i class="bi bi-geo-alt"></i> {{ listing.city }}, {{ listing.country }}</div>
+
+    <div class="gallery mb-4">
       {% for p in listing.photos %}
-      <div class="col-6">
-        <img class="img-fluid rounded" src="{{ url_for('uploads', filename=p.filename) }}" alt="photo">
-      </div>
+        <img class="gallery-item" src="{{ url_for('uploads', filename=p.filename) }}" alt="photo">
+      {% else %}
+        <img class="gallery-item" src="https://picsum.photos/seed/{{ listing.id }}/1200/800" alt="placeholder">
       {% endfor %}
     </div>
-    <p>{{ listing.description }}</p>
+
+    <p class="lead">{{ listing.description }}</p>
+
     {% if listing.amenities %}
       <h2 class="h6 mt-4">Équipements</h2>
-      <ul>
+      <div class="chips">
         {% for a in listing.amenities.split(",") %}
-          {% if a.strip() %}<li>{{ a.strip() }}</li>{% endif %}
+          {% if a.strip() %}<span class="chip"><i class="bi bi-check2-circle me-1"></i>{{ a.strip() }}</span>{% endif %}
         {% endfor %}
-      </ul>
+      </div>
     {% endif %}
+
     <h2 class="h6 mt-4">Avis</h2>
     {% for r in reviews %}
-      <div class="border rounded p-2 mb-2">
-        <strong>{{ r.user.name }}</strong> — ⭐ {{ r.rating }} <br>
-        <span>{{ r.comment }}</span><br>
-        <small class="text-muted">{{ r.created_at.date() }}</small>
+      <div class="review">
+        <div class="fw-semibold">{{ r.user.name }}</div>
+        <div class="small text-muted">⭐ {{ r.rating }} · {{ r.created_at.date() }}</div>
+        <p class="mb-0">{{ r.comment }}</p>
       </div>
     {% else %}
-      <p>Aucun avis pour l'instant.</p>
+      <p class="text-muted">Aucun avis pour l’instant.</p>
     {% endfor %}
-    <div class="mt-3">
-      <h3 class="h6">Laisser un avis</h3>
+
+    <div class="card p-3 mt-3">
+      <h3 class="h6 mb-2">Laisser un avis</h3>
       <form method="post">
         {{ rform.hidden_tag() }}
         <div class="row g-2">
-          <div class="col-3">{{ rform.rating(class="form-control", placeholder="Note 1-5") }}</div>
+          <div class="col-3">{{ rform.rating(class="form-control", placeholder="1-5") }}</div>
           <div class="col-9">{{ rform.comment(class="form-control", placeholder="Ton avis") }}</div>
         </div>
-        <button class="btn btn-outline-secondary mt-2">{{ rform.submit.label.text }}</button>
+        <button class="btn btn-outline-dark mt-2">{{ rform.submit.label.text }}</button>
       </form>
     </div>
   </div>
+
   <div class="col-lg-5">
-    <div class="p-3 border rounded">
-      <div class="d-flex align-items-baseline justify-content-between">
-        <div><span class="h5">{{ listing.price_per_night|int }} €</span> <span class="text-muted">par nuit</span></div>
-        <small class="text-muted">{{ listing.bedrooms }} ch • {{ listing.bathrooms }} sdb • {{ listing.max_guests }} pers</small>
+    <div class="sticky-card">
+      <div class="d-flex justify-content-between align-items-baseline">
+        <div class="h4 m-0">{{ listing.price_per_night|int }}€ <span class="fs-6 text-muted">/ nuit</span></div>
+        <div class="small text-muted">{{ listing.bedrooms }} ch · {{ listing.bathrooms }} sdb · {{ listing.max_guests }} pers</div>
       </div>
-      <form method="post">
+      <form method="post" class="mt-3">
         {{ bform.hidden_tag() }}
-        <div class="row g-2 mt-2">
+        <div class="row g-2">
           <div class="col-6">{{ bform.start_date(class="form-control", placeholder="Arrivée (YYYY-MM-DD)") }}</div>
           <div class="col-6">{{ bform.end_date(class="form-control", placeholder="Départ (YYYY-MM-DD)") }}</div>
+          <div class="col-12">{{ bform.guests(class="form-control", placeholder="Voyageurs") }}</div>
         </div>
-        <div class="mt-2">{{ bform.guests(class="form-control", placeholder="Voyageurs") }}</div>
-        <button class="btn btn-dark w-100 mt-3">{{ bform.submit.label.text }}</button>
-        <small class="text-muted d-block mt-2">Paiement simulé (statut confirmé).</small>
+        <button class="btn btn-dark w-100 mt-3"><i class="bi bi-calendar-check me-1"></i>{{ bform.submit.label.text }}</button>
+        <small class="text-muted d-block mt-2 text-center">Paiement simulé</small>
       </form>
+
       {% if current_user.is_authenticated and current_user.id != listing.host_id %}
         <hr>
-        <a class="btn btn-outline-primary w-100" href="{{ url_for('messages', receiver_id=listing.host_id) }}">Contacter l'hôte</a>
+        <a class="btn btn-outline-dark w-100" href="{{ url_for('messages', receiver_id=listing.host_id) }}">
+          <i class="bi bi-chat-dots me-1"></i> Contacter l’hôte
+        </a>
       {% endif %}
     </div>
   </div>
