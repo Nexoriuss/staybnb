@@ -252,23 +252,26 @@ def save_photo(file_storage):
 # Routes
 # =========================================================
 @app.route("/")
+@app.route("/")
 def index():
-    db = SessionLocal()
-    try:
-        q_city = request.args.get("city","").strip()
-        q_country = request.args.get("country","").strip()
-        q_guests = request.args.get("guests","").strip()
-        listings = db.query(Listing)
-        if q_city:
-            listings = listings.filter(Listing.city.ilike(f"%{q_city}%"))
-        if q_country:
-            listings = listings.filter(Listing.country.ilike(f"%{q_country}%"))
-        if q_guests and q_guests.isdigit():
-            listings = listings.filter(Listing.max_guests >= int(q_guests))
-        listings = listings.order_by(Listing.id.desc()).all()
-        return render_template("index.html", listings=listings)
-    finally:
-        db.close()
+    q_city = request.args.get("city")
+    q_country = request.args.get("country")
+    q_guests = request.args.get("guests")
+
+    # On charge aussi les photos pour éviter DetachedInstanceError
+    listings = db.query(Listing).options(selectinload(Listing.photos))
+
+    if q_city:
+        listings = listings.filter(Listing.city.ilike(f"%{q_city}%"))
+    if q_country:
+        listings = listings.filter(Listing.country.ilike(f"%{q_country}%"))
+    if q_guests and q_guests.isdigit():
+        listings = listings.filter(Listing.max_guests >= int(q_guests))
+
+    listings = listings.order_by(Listing.id.desc()).all()
+
+    return render_template("index.html", listings=listings)
+
 
 @app.route("/register", methods=["GET","POST"])
 def register():
