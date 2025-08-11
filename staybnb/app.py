@@ -2,7 +2,7 @@ import os
 import tempfile
 import urllib.request
 from datetime import datetime, date
-
+from sqlalchemy.orm import selectinload
 from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
