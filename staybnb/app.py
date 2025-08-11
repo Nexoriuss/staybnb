@@ -1,37 +1,46 @@
-\
 import os
+import tempfile
 import urllib.request
 from datetime import datetime, date
+
 from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, TextAreaField, IntegerField, DecimalField, DateField, FileField
 from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional
+
 from sqlalchemy import create_engine, Column, Integer, String, Text, Float, ForeignKey, Date, DateTime, and_, or_
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, scoped_session
 
-import tempfile
+# =========================================================
+# App config
+# =========================================================
+app = Flask(__name__)
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-please-change")
 
-if os.environ.get("RAILWAY_ENVIRONMENT"):
+# DB path:
+# - En local: fichier à côté du code
+# - Sur Railway: /tmp (écriture autorisée)
+if os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("PORT"):
     DB_PATH = os.path.join(tempfile.gettempdir(), "staybnb.sqlite3")
+    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 else:
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     DB_PATH = os.path.join(BASE_DIR, "staybnb.sqlite3")
 
-
-app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-please-change")
 app.config["UPLOAD_FOLDER"] = os.path.join(BASE_DIR, "static", "uploads")
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-# --- DB setup ---
+# =========================================================
+# Database (SQLAlchemy)
+# =========================================================
 engine = create_engine(f"sqlite:///{DB_PATH}", echo=False, future=True)
 SessionLocal = scoped_session(sessionmaker(bind=engine, autoflush=False, autocommit=False))
 Base = declarative_base()
 
-# --- Models ---
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
@@ -42,7 +51,6 @@ class User(Base):
     messages_sent = relationship("Message", foreign_keys="Message.sender_id", back_populates="sender")
     messages_received = relationship("Message", foreign_keys="Message.receiver_id", back_populates="receiver")
 
-    # Flask-Login compatibility
     @property
     def is_authenticated(self): return True
     @property
@@ -114,121 +122,52 @@ class Review(Base):
 
 Base.metadata.create_all(engine)
 
+# =========================================================
+# Seed auto si base vide (annonces de démo)
+# =========================================================
 def seed_if_empty():
-    """Ajoute des annonces de démo si la base est vide (au boot)."""
     db = SessionLocal()
     try:
-        # déjà des annonces ? on ne touche à rien
         if db.query(Listing).count() > 0:
             return
-
-        # créer un hôte démo
-        demo = User(
-            name="Hôte Démo",
-            email="demo@staybnb.local",
-            password_hash=generate_password_hash("demo1234")
-        )
-        db.add(demo)
-        db.commit()
+        demo = User(name="Hôte Démo", email="demo@staybnb.local", password_hash=generate_password_hash("demo1234"))
+        db.add(demo); db.commit()
 
         demo_listings = [
-            {
-                "title": "Loft lumineux près du Canal Saint-Martin",
-                "description": "Grand loft refait à neuf, hauteur sous plafond, cuisine ouverte, idéal pour un city-break.",
-                "city": "Paris", "country": "France",
-                "price": 145, "max_guests": 3, "bedrooms": 1, "bathrooms": 1,
-                "amenities": "Wi-Fi, Cuisine équipée, Lave-linge, Chauffage, TV",
-                "photos": [
-                    "https://picsum.photos/id/1067/1200/800",
-                    "https://picsum.photos/id/1018/1200/800",
-                ],
-            },
-            {
-                "title": "Appartement cosy près du Vieux-Port",
-                "description": "Ambiance méditerranéenne, balcon ensoleillé, parfait pour explorer Marseille.",
-                "city": "Marseille", "country": "France",
-                "price": 95, "max_guests": 2, "bedrooms": 1, "bathrooms": 1,
-                "amenities": "Wi-Fi, Climatisation, Cuisine, Machine à café",
-                "photos": [
-                    "https://picsum.photos/id/1025/1200/800",
-                    "https://picsum.photos/id/103/1200/800",
-                ],
-            },
-            {
-                "title": "Duplex design sur les quais",
-                "description": "Style contemporain, vue sur la Saône, idéal pour les amoureux d’architecture.",
-                "city": "Lyon", "country": "France",
-                "price": 120, "max_guests": 4, "bedrooms": 2, "bathrooms": 1,
-                "amenities": "Wi-Fi, Lave-vaisselle, Chauffage, TV, Lit bébé",
-                "photos": [
-                    "https://picsum.photos/id/1043/1200/800",
-                    "https://picsum.photos/id/1050/1200/800",
-                ],
-            },
-            {
-                "title": "Studio vue mer Promenade des Anglais",
-                "description": "Face à la mer, terrasse privée et accès plage à 2 minutes.",
-                "city": "Nice", "country": "France",
-                "price": 130, "max_guests": 2, "bedrooms": 1, "bathrooms": 1,
-                "amenities": "Wi-Fi, Climatisation, Terrasse, Ascenseur",
-                "photos": [
-                    "https://picsum.photos/id/1011/1200/800",
-                    "https://picsum.photos/id/1016/1200/800",
-                ],
-            },
-            {
-                "title": "Maison en pierre proche des vignobles",
-                "description": "Charme de l’ancien, grande cuisine, jardin au calme à 20 min de Bordeaux.",
-                "city": "Bordeaux", "country": "France",
-                "price": 160, "max_guests": 5, "bedrooms": 3, "bathrooms": 2,
-                "amenities": "Wi-Fi, Cheminée, Jardin, Parking, Barbecue",
-                "photos": [
-                    "https://picsum.photos/id/1040/1200/800",
-                    "https://picsum.photos/id/1008/1200/800",
-                ],
-            },
+            {"title":"Loft lumineux près du Canal Saint-Martin","description":"Grand loft refait à neuf, hauteur sous plafond, cuisine ouverte, idéal pour un city-break.","city":"Paris","country":"France","price":145,"max_guests":3,"bedrooms":1,"bathrooms":1,"amenities":"Wi-Fi, Cuisine équipée, Lave-linge, Chauffage, TV","photos":["https://picsum.photos/id/1067/1200/800","https://picsum.photos/id/1018/1200/800"]},
+            {"title":"Appartement cosy près du Vieux-Port","description":"Ambiance méditerranéenne, balcon ensoleillé, parfait pour explorer Marseille.","city":"Marseille","country":"France","price":95,"max_guests":2,"bedrooms":1,"bathrooms":1,"amenities":"Wi-Fi, Climatisation, Cuisine, Machine à café","photos":["https://picsum.photos/id/1025/1200/800","https://picsum.photos/id/103/1200/800"]},
+            {"title":"Duplex design sur les quais","description":"Style contemporain, vue sur la Saône, idéal pour les amoureux d’architecture.","city":"Lyon","country":"France","price":120,"max_guests":4,"bedrooms":2,"bathrooms":1,"amenities":"Wi-Fi, Lave-vaisselle, Chauffage, TV, Lit bébé","photos":["https://picsum.photos/id/1043/1200/800","https://picsum.photos/id/1050/1200/800"]},
+            {"title":"Studio vue mer Promenade des Anglais","description":"Face à la mer, terrasse privée et accès plage à 2 minutes.","city":"Nice","country":"France","price":130,"max_guests":2,"bedrooms":1,"bathrooms":1,"amenities":"Wi-Fi, Climatisation, Terrasse, Ascenseur","photos":["https://picsum.photos/id/1011/1200/800","https://picsum.photos/id/1016/1200/800"]},
+            {"title":"Maison en pierre proche des vignobles","description":"Charme de l’ancien, grande cuisine, jardin au calme à 20 min de Bordeaux.","city":"Bordeaux","country":"France","price":160,"max_guests":5,"bedrooms":3,"bathrooms":2,"amenities":"Wi-Fi, Cheminée, Jardin, Parking, Barbecue","photos":["https://picsum.photos/id/1040/1200/800","https://picsum.photos/id/1008/1200/800"]},
         ]
 
-        upload_dir = app.config["UPLOAD_FOLDER"]
-        os.makedirs(upload_dir, exist_ok=True)
+        updir = app.config["UPLOAD_FOLDER"]
+        os.makedirs(updir, exist_ok=True)
 
         for item in demo_listings:
             l = Listing(
-                host_id=demo.id,
-                title=item["title"],
-                description=item["description"],
-                city=item["city"],
-                country=item["country"],
-                price_per_night=float(item["price"]),
-                max_guests=item["max_guests"],
-                bedrooms=item["bedrooms"],
-                bathrooms=item["bathrooms"],
-                amenities=item["amenities"],
+                host_id=demo.id, title=item["title"], description=item["description"],
+                city=item["city"], country=item["country"],
+                price_per_night=float(item["price"]), max_guests=item["max_guests"],
+                bedrooms=item["bedrooms"], bathrooms=item["bathrooms"], amenities=item["amenities"]
             )
-            db.add(l)
-            db.commit()
-
-            # télécharger et enregistrer localement les photos
+            db.add(l); db.commit()
             for i, url in enumerate(item["photos"]):
-                filename = f"seed_{l.id}_{i}.jpg"
-                dest = os.path.join(upload_dir, filename)
+                fname = f"seed_{l.id}_{i}.jpg"
                 try:
-                    urllib.request.urlretrieve(url, dest)
-                    db.add(Photo(listing_id=l.id, filename=filename))
-                    db.commit()
+                    urllib.request.urlretrieve(url, os.path.join(updir, fname))
+                    db.add(Photo(listing_id=l.id, filename=fname)); db.commit()
                 except Exception as e:
-                    # si une image échoue, on continue quand même
                     print("Seed photo error:", e)
-
         print("✅ Base de démo initialisée.")
     finally:
         db.close()
 
-# Lance le seed au démarrage du serveur
 seed_if_empty()
 
-
-# --- Auth setup ---
+# =========================================================
+# Auth (Flask-Login)
+# =========================================================
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
@@ -240,7 +179,9 @@ def load_user(user_id):
     finally:
         db.close()
 
-# --- Forms ---
+# =========================================================
+# Forms
+# =========================================================
 class RegisterForm(FlaskForm):
     name = StringField("Nom", validators=[DataRequired(), Length(min=2, max=120)])
     email = StringField("Email", validators=[DataRequired(), Email()])
@@ -281,7 +222,9 @@ class ReviewForm(FlaskForm):
     comment = TextAreaField("Avis", validators=[DataRequired(), Length(min=5)])
     submit = SubmitField("Publier l'avis")
 
-# --- Helpers ---
+# =========================================================
+# Helpers
+# =========================================================
 def overlap(a_start, a_end, b_start, b_end):
     return a_start <= b_end and b_start <= a_end
 
@@ -305,7 +248,9 @@ def save_photo(file_storage):
     file_storage.save(path)
     return unique
 
-# --- Routes ---
+# =========================================================
+# Routes
+# =========================================================
 @app.route("/")
 def index():
     db = SessionLocal()
@@ -339,8 +284,7 @@ def register():
                     email=form.email.data.lower(),
                     password_hash=generate_password_hash(form.password.data)
                 )
-                db.add(user)
-                db.commit()
+                db.add(user); db.commit()
                 login_user(user)
                 flash("Bienvenue ! Ton compte est créé.", "success")
                 return redirect(url_for("index"))
@@ -391,8 +335,7 @@ def new_listing():
                 bathrooms=form.bathrooms.data,
                 amenities=form.amenities.data or ""
             )
-            db.add(listing)
-            db.commit()
+            db.add(listing); db.commit()
             for ph in [form.photo1.data, form.photo2.data]:
                 fn = save_photo(ph)
                 if fn:
@@ -414,7 +357,7 @@ def listing_detail(listing_id):
             return redirect(url_for("index"))
         bform = BookingForm()
         rform = ReviewForm()
-        # Handle booking submit
+
         if bform.submit.data and bform.validate_on_submit():
             start = bform.start_date.data
             end = bform.end_date.data
@@ -434,16 +377,14 @@ def listing_detail(listing_id):
                 booking = Booking(user_id=current_user.id, listing_id=listing.id,
                                   start_date=start, end_date=end, guests=guests,
                                   total_price=total, status="confirmed")
-                db.add(booking)
-                db.commit()
+                db.add(booking); db.commit()
                 flash("Réservation créée (paiement simulé).", "success")
                 return redirect(url_for("dashboard"))
-        # Handle review submit
+
         if rform.submit.data and rform.validate_on_submit():
             if not current_user.is_authenticated:
                 flash("Connecte-toi pour publier un avis.", "warning")
                 return redirect(url_for("login"))
-            # simple rule: only allow review if user has a booking that ended
             past_booking = db.query(Booking).filter(
                 Booking.user_id==current_user.id,
                 Booking.listing_id==listing.id,
@@ -455,8 +396,7 @@ def listing_detail(listing_id):
             else:
                 review = Review(listing_id=listing.id, user_id=current_user.id,
                                 rating=rform.rating.data, comment=rform.comment.data)
-                db.add(review)
-                db.commit()
+                db.add(review); db.commit()
                 flash("Avis publié.", "success")
                 return redirect(url_for("listing_detail", listing_id=listing.id))
 
@@ -489,10 +429,8 @@ def messages(receiver_id):
         form = MessageForm()
         if form.validate_on_submit():
             m = Message(sender_id=current_user.id, receiver_id=other.id, body=form.body.data)
-            db.add(m)
-            db.commit()
+            db.add(m); db.commit()
             return redirect(url_for("messages", receiver_id=other.id))
-        # fetch convo
         convo = db.query(Message).filter(
             or_(
                 and_(Message.sender_id==current_user.id, Message.receiver_id==other.id),
@@ -507,7 +445,9 @@ def messages(receiver_id):
 def uploads(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
+# =========================================================
+# Run
+# =========================================================
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=False, host="0.0.0.0", port=port)
