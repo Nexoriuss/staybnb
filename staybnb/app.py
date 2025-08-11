@@ -12,8 +12,14 @@ from wtforms.validators import DataRequired, Email, Length, NumberRange, Optiona
 from sqlalchemy import create_engine, Column, Integer, String, Text, Float, ForeignKey, Date, DateTime, and_, or_
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, scoped_session
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, "staybnb.sqlite3")
+import tempfile
+
+if os.environ.get("RAILWAY_ENVIRONMENT"):
+    DB_PATH = os.path.join(tempfile.gettempdir(), "staybnb.sqlite3")
+else:
+    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+    DB_PATH = os.path.join(BASE_DIR, "staybnb.sqlite3")
+
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-please-change")
